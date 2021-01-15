@@ -1,4 +1,4 @@
-# MinecraftDataAPI
+# Minecraft Data API
 -------------
 
 [中文](https://github.com/MCDReforged/MinecraftDataAPI/blob/master/README_cn.md)

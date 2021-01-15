@@ -1,4 +1,4 @@
-# PlayerInfoAPI
+# Minecraft Data API
 -------------
 
 一个提供获取玩家数据信息等的 MCDReforged 插件 API
