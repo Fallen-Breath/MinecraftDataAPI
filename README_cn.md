@@ -1,6 +1,8 @@
 # Minecraft Data API
 -------------
 
+[English](https://github.com/MCDReforged/MinecraftDataAPI/blob/master/README.md)
+
 一个提供获取玩家数据信息等的 MCDReforged 插件 API
 
 ## 依赖
@@ -27,7 +29,7 @@ PLUGIN_METADATA = {
 
 ## 函数列表
 
-阅读相关代码以得到更全面的理解
+查看 `examples` 文件夹中的样例插件，或者阅读相关代码，以得到更全面的理解
 
 ### convert_minecraft_json
 

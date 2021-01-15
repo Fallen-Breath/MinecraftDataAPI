@@ -29,6 +29,8 @@ PLUGIN_METADATA = {
 
 ## Function list
 
+Check the sample plugin in the `examples` folder or read the code to get a more comprehensive understanding
+
 ### convert_minecraft_json
 
 ```python
