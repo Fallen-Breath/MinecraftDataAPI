@@ -1,15 +1,17 @@
 import collections
 import re
+from contextlib import contextmanager
 from queue import Queue, Empty
 from threading import RLock
-from typing import Dict, Optional, Union
+from typing import Dict, Optional, Union, Tuple, List
 
 import json5
+import parse
 from mcdreforged.api.all import *
 
 PLUGIN_METADATA = {
 	'id': 'minecraft_data_api',
-	'version': '1.0.0',
+	'version': '1.1.0',
 	'name': 'Minecraft Data API',
 	'description': 'A MCDReforged api plugin to get player data information and more',
 	'author': [
@@ -27,14 +29,11 @@ class PlayerDataGetter:
 			self.queue = Queue()
 			self.count = 0
 
-	def __init__(self):
+	def __init__(self, server: ServerInterface):
 		self.queue_lock = RLock()
 		self.work_queue = {}  # type: Dict[str, PlayerDataGetter.QueueTask]
-		self.server = None  # type: Optional[ServerInterface]
+		self.server = server  # type: ServerInterface
 		self.json_parser = MinecraftJsonParser()
-
-	def attach(self, server: ServerInterface):
-		self.server = server
 
 	def get_queue_task(self, player) -> QueueTask:
 		with self.queue_lock:
@@ -42,34 +41,29 @@ class PlayerDataGetter:
 				self.work_queue[player] = self.QueueTask()
 			return self.work_queue[player]
 
-	def get_player_info(self, player: str, path: str, timeout: Optional[float]):
+	def get_player_info(self, player: str, path: str, timeout: float):
 		if self.server.is_on_executor_thread():
 			raise RuntimeError('Cannot invoke get_player_info on the task executor thread')
 		if len(path) >= 1 and not path.startswith(' '):
 			path = ' ' + path
-		if timeout is None:
-			timeout = DEFAULT_TIME_OUT
 		command = 'data get entity {}{}'.format(player, path)
-		if self.server.is_rcon_running():
-			return self.server.rcon_query(command)
-		else:
-			task = self.get_queue_task(player)
-			task.count += 1
-			try:
-				self.server.execute(command)
-				content = task.queue.get(timeout=timeout)
-			except Empty:
-				return None
-			finally:
-				task.count -= 1
-			try:
-				return self.json_parser.convert_minecraft_json(content)
-			except Exception as e:
-				self.server.logger.error('[{}] Fail to Convert data "{}": {}'.format(
-					PLUGIN_METADATA['name'],
-					content if len(content) < 64 else '{}...'.format(content[:64]),
-					e
-				))
+		task = self.get_queue_task(player)
+		task.count += 1
+		try:
+			self.server.execute(command)
+			content = task.queue.get(timeout=timeout)
+		except Empty:
+			return None
+		finally:
+			task.count -= 1
+		try:
+			return self.json_parser.convert_minecraft_json(content)
+		except Exception as err:
+			self.server.logger.error('[{}] Fail to Convert data "{}": {}'.format(
+				PLUGIN_METADATA['name'],
+				content if len(content) < 64 else '{}...'.format(content[:64]),
+				err
+			))
 
 	def on_info(self, info: Info):
 		if not info.is_user:
@@ -141,20 +135,71 @@ class MinecraftJsonParser:
 		return result
 
 
-data_getter = None  # type: Optional[PlayerDataGetter]
+class ServerDataGetter:
+	class QueryTask:
+		def __init__(self):
+			self.querying_amount = 0
+			self.result_queue = Queue()
+
+		def is_querying(self):
+			return self.querying_amount > 0
+
+		@contextmanager
+		def with_querying(self):
+			self.querying_amount += 1
+			try:
+				yield
+			finally:
+				self.querying_amount -= 1
+
+	def __init__(self, server: ServerInterface):
+		self.server = server
+		self.player_list = self.QueryTask()
+
+	def get_player_list(self, timeout: float) -> Optional[Tuple[int, int, List[str]]]:
+		if self.server.is_on_executor_thread():
+			raise RuntimeError('Cannot invoke get_player_list on the task executor thread')
+		with self.player_list.with_querying():
+			self.server.execute('list')
+			try:
+				amount, limit, players = self.player_list.result_queue.get(timeout=timeout)
+			except Empty:
+				return None
+			else:
+				if len(players) > 0:
+					players = players.split(', ')
+				else:
+					players = []
+				return amount, limit, players
+
+	def on_info(self, info: Info):
+		if not info.is_user:
+			if self.player_list.is_querying():
+				# There are 6 of a max 100 players online: 122, abc, xxx, www, QwQ, bot_tob
+				parsed = parse.parse(r'There are {amount:d} of a max {limit:d} players online:{players}', info.content)
+				if parsed is not None and parsed['players'].startswith(' '):
+					self.player_list.result_queue.put((parsed['amount'], parsed['limit'], parsed['players'][1:]))
+
+
+player_data_getter = None  # type: Optional[PlayerDataGetter]
+server_data_getter = None  # type: Optional[ServerDataGetter]
 
 
 def on_load(server, prev):
-	global data_getter
-	if hasattr(prev, 'data_getter'):
-		data_getter = prev.data_getter
-	else:
-		data_getter = PlayerDataGetter()
-	data_getter.attach(server)
+	global player_data_getter, server_data_getter
+	player_data_getter = PlayerDataGetter(server)
+	server_data_getter = ServerDataGetter(server)
+
+	if hasattr(prev, 'player_data_getter'):
+		player_data_getter.queue_lock = prev.player_data_getter.queue_lock
+		player_data_getter.work_queue = prev.player_data_getter.work_queue
+	if hasattr(prev, 'server_data_getter'):
+		server_data_getter.player_list = prev.server_data_getter.player_list
 
 
 def on_info(server: ServerInterface, info):
-	data_getter.on_info(info)
+	player_data_getter.on_info(info)
+	server_data_getter.on_info(info)
 
 
 # ------------------
@@ -167,7 +212,7 @@ def convert_minecraft_json(text: str):
 	Convert a mojang style "json" str to a json like object
 	:param text: The name of the player
 	"""
-	return data_getter.json_parser.convert_minecraft_json(text)
+	return player_data_getter.json_parser.convert_minecraft_json(text)
 
 
 def get_player_info(player: str, data_path: str = '', *, timeout: Optional[float] = None):
@@ -179,7 +224,9 @@ def get_player_info(player: str, data_path: str = '', *, timeout: Optional[float
 	:param timeout: The timeout limit for querying
 	:return: A parsed json like object contains the information. e.g. a dict
 	"""
-	return data_getter.get_player_info(player, data_path, timeout)
+	if timeout is None:
+		timeout = DEFAULT_TIME_OUT
+	return player_data_getter.get_player_info(player, data_path, timeout)
 
 
 Coordinate = collections.namedtuple('Coordinate', 'x y z')
@@ -231,6 +278,19 @@ def get_dimension_translation_text(dim_id: int) -> RText:
 		return RTextTranslation(dimension_translation[dim_id])
 	else:
 		return RText(dim_id)
+
+
+def get_server_player_list(*, timeout: Optional[float] = None) -> Optional[Tuple[int, int, List[str]]]:
+	"""
+	Return the player list information by executing /list command
+	It's required to be executed in a separated thread. It can not be invoked on the task executor thread of MCDR
+	:param timeout: The timeout limit for querying
+	:return: A tuple with 3 element: the amount of current player, the player limit, and a list of names of online players
+	Return None if querying failed
+	"""
+	if timeout is None:
+		timeout = DEFAULT_TIME_OUT
+	return server_data_getter.get_player_list(timeout)
 
 # -----------------------
 #   API Interfaces ends

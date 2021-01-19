@@ -51,7 +51,7 @@ def convert_minecraft_json(text: str)
 - text: 从`/data get entity`指令或者其他命令获得的麻将牌 JSON 数据
 
 返回：
-- json 解析后的结果。它可以是一个 `dict`, 一个 `list`, 一个 `int` 或者一个 `None`
+- json 解析后的结果。它可以是一个 `dict`, 一个 `list`, 一个 `int`
 
 示例：
 
@@ -67,12 +67,10 @@ def get_player_info(player: str, data_path: str = '', *, timeout: Optional[float
 
 自动执行 `/data get entity <name> [<path>]` 并解析返回数据
 
-如果在 MCDReforged 中使用并且开启了rcon，插件会自动从rcon执行获得结果
-
 参数：
 - name: 要获得 TA 数据的目标玩家名
 - path: 在`/data get entity` 指令中的可选参数 `path`
-- timeout: 当 rcon 关闭时等待结果的最长时间。如果超时了则返回 `None`
+- timeout: 等待结果的最长时间。如果超时了则返回 `None`。默认 5s
 
 返回：
  - 解析后的结果
@@ -132,3 +130,15 @@ dimension_translation = {
 如果输入的维度 id 不在上表中，则直接返回一个包装着输入的维度 id 的 RText 对象
 
 顺便一提，你可以放心地使用 `api.get_dimension_translation_text(api.get_player_dimension('Steve'))` 来获得一个储存着玩家维度的文本容器
+
+### get_server_player_list
+
+```python
+def get_server_player_list(*, timeout: Optional[float] = None) -> Optional[Tuple[int, int, List[str]]]
+```
+
+使用 `/list` 指令获得玩家列表相关信息
+
+返回值是一个含有 3 个元素的元组：当前玩家的数量、玩家数量上限、在线玩家名的列表。如果查询失败，返回 None
+
+样例用法见 `examples/PlayerList.py`

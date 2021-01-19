@@ -51,7 +51,7 @@ Args:
 - text: A data get entity or other command result that use Minecraft style json format
 
 Return:
-- A parsed json result. It can be a `dict`, a `list`, a `int` or a `None`
+- A parsed json result. It can be a `dict`, a `list` or an `int`
 
 Samples:
 
@@ -67,12 +67,10 @@ def get_player_info(player: str, data_path: str = '', *, timeout: Optional[float
 
 Execute `data get entity <name> [<path>]` and parse the result
 
-If it's in MCDReforged and rcon is enabled it will use rcon to query
-
 Args:
 - name: Name of the player who you want to get his/her info
 - path: An optional `path` parameter in `data get entity` command
-- timeout: The maximum time to wait the data result if rcon is off. Return `None` if time out
+- timeout: The maximum time to wait the data result. Return `None` if time out. Default value `5`
 
 Return:
 - A parsed json result. It can be a `dict`, a `list`, a `int` or a `None`
@@ -132,3 +130,15 @@ dimension_translation = {
 If the dimension id is not in the mapping, it will return a RText object contains the input id directly
 
 You can safely use `api.get_dimension_translation_text(api.get_player_dimension('Steve'))` to get text component storing the dimension the player is in
+
+### get_server_player_list
+
+```python
+def get_server_player_list(*, timeout: Optional[float] = None) -> Optional[Tuple[int, int, List[str]]]
+```
+
+Return the player list information by executing /list command
+
+The return value is a tuple with 3 element: the amount of current player, the player limit, and a list of names of online players. Return None if querying failed
+
+See `examples/PlayerList.py` for example usage
