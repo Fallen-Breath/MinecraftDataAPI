@@ -5,13 +5,13 @@ from queue import Queue, Empty
 from threading import RLock
 from typing import Dict, Optional, Union, Tuple, List
 
-import json5
+import hjson
 import parse
 from mcdreforged.api.all import *
 
 PLUGIN_METADATA = {
 	'id': 'minecraft_data_api',
-	'version': '1.1.0',
+	'version': '1.2.0',
 	'name': 'Minecraft Data API',
 	'description': 'A MCDReforged api plugin to get player data information and more',
 	'author': [
@@ -101,7 +101,9 @@ class MinecraftJsonParser:
 		text = cls.remove_letter_after_number(text)
 
 		# {a: 0, big: 2.99E7, c: "minecraft:white_wool", d: '{"text":"rua"}'}
-		return json5.loads(text)
+		value = hjson.loads(text)
+		if isinstance(value, collections.OrderedDict):
+			return dict(value)  # in python 3.6+ dict is already ordered
 
 	@classmethod
 	def remove_letter_after_number(cls, text: str) -> str:

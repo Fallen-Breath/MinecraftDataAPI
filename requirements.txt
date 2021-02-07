@@ -1,2 +1,2 @@
 mcdreforged
-json5
+hjson
