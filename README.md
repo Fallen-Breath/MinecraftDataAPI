@@ -7,7 +7,7 @@ A MCDReforged api plugin to get player data information and more
 
 ## Dependency
 
-- `json5` module
+- `hjson` module
 
 ## Usage
 
