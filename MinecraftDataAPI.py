@@ -11,7 +11,7 @@ from mcdreforged.api.all import *
 
 PLUGIN_METADATA = {
 	'id': 'minecraft_data_api',
-	'version': '1.2.0',
+	'version': '1.2.1',
 	'name': 'Minecraft Data API',
 	'description': 'A MCDReforged api plugin to get player data information and more',
 	'author': [
@@ -53,6 +53,7 @@ class PlayerDataGetter:
 			self.server.execute(command)
 			content = task.queue.get(timeout=timeout)
 		except Empty:
+			self.server.logger.warning('[{}] Query for player {} at path {} timeout'.format(PLUGIN_METADATA['name'], player, path))
 			return None
 		finally:
 			task.count -= 1
@@ -104,6 +105,7 @@ class MinecraftJsonParser:
 		value = hjson.loads(text)
 		if isinstance(value, collections.OrderedDict):
 			return dict(value)  # in python 3.6+ dict is already ordered
+		return value
 
 	@classmethod
 	def remove_letter_after_number(cls, text: str) -> str:
