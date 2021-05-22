@@ -11,7 +11,7 @@ from mcdreforged.api.all import *
 
 PLUGIN_METADATA = {
 	'id': 'minecraft_data_api',
-	'version': '1.2.2',
+	'version': '1.3.0',
 	'name': 'Minecraft Data API',
 	'description': 'A MCDReforged api plugin to get player data information and more',
 	'author': [
