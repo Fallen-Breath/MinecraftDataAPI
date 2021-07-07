@@ -66,5 +66,5 @@ jobs:
 
     - uses: actions/upload-artifact@v2
       with:
-        name: QuickBackupM distribution for ${{ github.sha }}
+        name: MinecraftDataAPI distribution for ${{ github.sha }}
         path: package/
