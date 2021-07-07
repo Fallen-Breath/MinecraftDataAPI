@@ -2,7 +2,7 @@ import os
 import re
 import unittest
 
-from MinecraftDataAPI import MinecraftJsonParser
+from minecraft_data_api.json_parser import MinecraftJsonParser
 
 
 class MyTestCase(unittest.TestCase):
@@ -19,7 +19,7 @@ class MyTestCase(unittest.TestCase):
 		for file_name in os.listdir(here):
 			if file_name.endswith('.txt'):
 				print('Testing {}'.format(file_name))
-				with open(file_name, encoding='utf8') as file:
+				with open(os.path.join(here, file_name), encoding='utf8') as file:
 					text = file.read()
 				print('Parsing long minecraft data with length {}'.format(len(text)))
 				MinecraftJsonParser().convert_minecraft_json(text)

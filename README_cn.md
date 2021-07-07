@@ -82,7 +82,7 @@ def get_player_info(player: str, data_path: str = '', *, timeout: Optional[float
 ### get_player_coordinate
 
 ```python
-def get_player_coordinate(player: str, *, timeout: Optional[float] = None) -> Union[int or str]
+def get_player_coordinate(player: str, *, timeout: Optional[float] = None) -> Coordinate
 ```
 
 使用 `get_player_info` 查询玩家的 `Pos` 字段信息，从何得到玩家的坐标。如果查询失败，抛出 `ValueError` 异常

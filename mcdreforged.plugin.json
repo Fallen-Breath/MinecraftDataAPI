@@ -1,0 +1,15 @@
+{
+	"id": "minecraft_data_api",
+	"version": "1.4.0",
+	"name": "Minecraft Data API",
+	"description": "A MCDReforged api plugin to get player data information and more",
+	"author": [
+		"Fallen_Breath"
+	],
+	"link": "https://github.com/MCDReforged/MinecraftDataAPI",
+	"dependencies": {
+		"mcdreforged": ">=2.0.0-alpha.4"
+	},
+	"resources": [
+	]
+}

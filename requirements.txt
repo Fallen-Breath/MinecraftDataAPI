@@ -1,2 +1,3 @@
-mcdreforged
+mcdreforged>=2.0.0a4
 hjson
+parse

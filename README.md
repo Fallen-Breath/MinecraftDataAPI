@@ -92,7 +92,7 @@ It will convert the return value into a named tuple `collections.namedtuple('Coo
 ### get_player_dimension
 
 ```
-def get_player_dimension(player: str, *, timeout: Optional[float] = None) -> Union[int or str]
+def get_player_dimension(player: str, *, timeout: Optional[float] = None) -> Coordinate
 ```
 
 Use `get_player_info` to query the `Dimension` data of the player to get the player's dimension. A `ValueError` will be risen if query failed
