@@ -5,6 +5,21 @@ from minecraft_data_api.json_parser import MinecraftJsonParser
 
 
 class MyTestCase(unittest.TestCase):
+	def test_0_preprocess(self):
+		cases = [
+			'"',
+			'"\\',
+			'"\\"',
+			'"\\a',
+			"'",
+			"'\\",
+			"'\\'",
+			"'\\a",
+		]
+		for s in cases:
+			with self.assertRaisesRegex(ValueError, 'Cannot find a string ending quote', msg='s = {}'.format(repr(s))):
+				MinecraftJsonParser.preprocess_minecraft_json(s)
+
 	def test_1_correctness(self):
 		cases = {
 			# docstring of MinecraftJsonParser.convert_minecraft_json

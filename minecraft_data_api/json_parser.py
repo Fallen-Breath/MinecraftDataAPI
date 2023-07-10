@@ -49,33 +49,42 @@ class MinecraftJsonParser:
 
 	@classmethod
 	def preprocess_minecraft_json(cls, text: str) -> str:
+		def cpp_find(idx: int, end: int) -> int:
+			if idx != -1:
+				return idx
+			return end
+
 		result: List[str] = []
-		while text:
-			pos = min(text.find('"'), text.find("'"))
-			quote = None
-			if pos == -1:
-				pos = len(text)
-			non_quote_str, quote_str = text[:pos], text[pos:]
+		i = 0
+		while i < len(text):
+			pos = min(cpp_find(text.find('"', i), len(text)), cpp_find(text.find("'", i), len(text)))
+			non_quote_str = text[i:pos]
 			non_quote_str = cls.__LETTER_AFTER_NUMBER_REGEX.sub(r'\1', non_quote_str)  # remove letter after number outside string: "1.23D" -> "1.23"
 			non_quote_str = cls.__ARRAY_HEADER_REGEX.sub('', non_quote_str)  # remove int array or long array header outside string: "[I; 1,2,3]" -> "[ 1,2,3]"
 			result.append(non_quote_str)
-			if quote_str:
-				quote = quote_str[0]
-				result.append(quote)
-				quote_str = quote_str[1:]  # remove the beginning quote
-			while quote_str:
-				slash_pos = quote_str.find('\\')
-				if slash_pos == -1:
-					slash_pos = len(quote_str)
-				quote_pos = quote_str[:slash_pos].find(quote)
+
+			i = pos
+			if i == len(text):
+				break
+			quote = text[i]
+			j = i + 1
+			while j < len(text):
+				slash_pos = cpp_find(text.find('\\', j), len(text))
+				quote_pos = text.find(quote, j, slash_pos)
 				if quote_pos == -1:  # cannot find a quote in front of the first slash
-					if slash_pos == len(quote_str):
+					j = slash_pos + 2
+					if j > len(text):
 						raise ValueError('Cannot find a string ending quote')
-					result.append(quote_str[:slash_pos + 2])
-					quote_str = quote_str[slash_pos + 2:]
 				else:
-					result.append(quote_str[:quote_pos + 1])
-					quote_str = quote_str[quote_pos + 1:]  # found an un-escaped quote
+					j = quote_pos + 1  # found an un-escaped quote
 					break
-			text = quote_str
+			else:
+				raise ValueError('Cannot find a string ending quote')
+
+			# Expected after finishes the while-loop above:
+			#     foo: "abc\tedf\"bar", xxx: 123
+			#          i              j
+			# i.e. text[i:j] == "abc\tedf\"bar"
+			result.append(text[i: j])
+			i = j
 		return ''.join(result)
