@@ -5,6 +5,8 @@ import hjson
 
 
 class MinecraftJsonParser:
+	__COMMAND_RESULT_PREFIX_REGEX = re.compile(r'^[^ ]* has the following entity data: ')
+
 	@classmethod
 	def convert_minecraft_json(cls, text: str):
 		r"""
@@ -25,11 +27,12 @@ class MinecraftJsonParser:
 
 		# Alex has the following entity data: {a: 0b, big: 2.99E7, c: "minecraft:white_wool", d: '{"text":"rua"}'}
 		# yeet the prefix
-		text = re.sub(r'^.* has the following entity data: ', '', text)  # yeet prefix
+		text = cls.remove_command_result_prefix(text)  # yeet prefix
 
 		# {a: 0b, big: 2.99E7, c: "minecraft:white_wool", d: '{"text":"rua"}'}
 		# remove letter after number outside string
-		text = cls.remove_letter_after_number(text)
+		# remove int array or long array header outside string
+		text = cls.preprocess_minecraft_json(text)
 
 		# {a: 0, big: 2.99E7, c: "minecraft:white_wool", d: '{"text":"rua"}'}
 		value = hjson.loads(text)
@@ -38,7 +41,11 @@ class MinecraftJsonParser:
 		return value
 
 	@classmethod
-	def remove_letter_after_number(cls, text: str) -> str:
+	def remove_command_result_prefix(cls, text: str) -> str:
+		return cls.__COMMAND_RESULT_PREFIX_REGEX.sub('', text)
+
+	@classmethod
+	def preprocess_minecraft_json(cls, text: str) -> str:
 		result = ''
 		while text:
 			pos = min(text.find('"'), text.find("'"))
@@ -46,8 +53,8 @@ class MinecraftJsonParser:
 			if pos == -1:
 				pos = len(text)
 			non_quote_str, quote_str = text[:pos], text[pos:]
-			non_quote_str = re.sub(r'(?<=\d)[a-zA-Z](?=(\D|$))', '', non_quote_str)  # remove letter after number outside string: 1.23D
-			non_quote_str = re.sub(r'(?<=\[)[IL];', '', non_quote_str)  # remove int array or long array header outside string: [I: 1,2,3]
+			non_quote_str = re.sub(r'(([{\[:,]|^) *[+-]?\d+(\.\d*?)?(E[+-]?\d+)?)([bsLdf])', r'\1', non_quote_str)  # remove letter after number outside string: "1.23D" -> "1.23"
+			non_quote_str = re.sub(r'(?<=\[)[IL];', '', non_quote_str)  # remove int array or long array header outside string: "[I; 1,2,3]" -> "[ 1,2,3]"
 			result += non_quote_str
 			if quote_str:
 				quote = quote_str[0]
