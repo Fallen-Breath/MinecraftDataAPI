@@ -11,13 +11,15 @@
 
 ## 使用方法
 
-使用 `server.get_plugin_instance()` 来获得 MinecraftDataAPI 插件实例，即可使用
+直接 `import` MinecraftDataAPI，就能用了
 
 ```python
-api = server.get_plugin_instance('minecraft_data_api')
+import minecraft_data_api as api
+
+pos = api.get_player_info('Steve', 'Pos')
 ```
 
-可在 PLUGIN_METADATA 中声明对本 API 的依赖：
+建议：在插件元数据中声明对 MinecraftDataAPI 的依赖：
 
 ```python
 PLUGIN_METADATA = {

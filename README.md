@@ -11,13 +11,15 @@ A MCDReforged api plugin to get player data information and more
 
 ## Usage
 
-Use `server.get_plugin_instance()` to get the MinecraftDataAPI instance
+Directly `import` MinecraftDataAPI and just use it:
 
 ```python
-api = server.get_plugin_instance('minecraft_data_api')
+import minecraft_data_api as api
+
+pos = api.get_player_info('Steve', 'Pos')
 ```
 
-You can declare the dependency of this plugin in PLUGIN_METADATA:
+Suggestion: declare the dependency of MinecraftDataAPI in your plugin metadata:
 
 ```python
 PLUGIN_METADATA = {
@@ -29,7 +31,7 @@ PLUGIN_METADATA = {
 
 ## Function list
 
-Check the sample plugin in the `examples` folder or read the code to get a more comprehensive understanding
+Check the example plugin in the `examples` folder or read the code to get a more comprehensive understanding
 
 ### convert_minecraft_json
 
@@ -51,9 +53,9 @@ Args:
 - text: A data get entity or other command result that use Minecraft style json format
 
 Return:
-- A parsed json result. It can be a `dict`, a `list` or an `int`
+- A parsed json result. It can be a `dict` / `list` / `int` / `float`
 
-Samples:
+Examples:
 
 - Input `Steve has the following entity data: [-227.5d, 64.0d, 231.5d]`, output `[-227.5, 64.0, 123000.0]`
 
