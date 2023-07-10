@@ -1,7 +1,7 @@
 import re
 from queue import Queue, Empty
 from threading import RLock
-from typing import Dict
+from typing import Dict, Optional
 
 from mcdreforged.api.all import *
 
@@ -16,11 +16,15 @@ class PlayerDataGetter:
 
 	def __init__(self, server: PluginServerInterface):
 		self.queue_lock = RLock()
-		self.work_queue = {}  # type: Dict[str, PlayerDataGetter.QueueTask]
-		self.server = server  # type: PluginServerInterface
+		self.work_queue: Dict[str, PlayerDataGetter.QueueTask] = {}
+		self.server: PluginServerInterface = server
 		self.json_parser = MinecraftJsonParser()
 
-	def get_queue_task(self, player) -> QueueTask:
+	def get_queue_task(self, player: str) -> Optional[QueueTask]:
+		with self.queue_lock:
+			return self.work_queue.get(player)
+
+	def get_or_create_queue_task(self, player: str) -> QueueTask:
 		with self.queue_lock:
 			if player not in self.work_queue:
 				self.work_queue[player] = self.QueueTask()
@@ -32,7 +36,7 @@ class PlayerDataGetter:
 		if len(path) >= 1 and not path.startswith(' '):
 			path = ' ' + path
 		command = 'data get entity {}{}'.format(player, path)
-		task = self.get_queue_task(player)
+		task = self.get_or_create_queue_task(player)
 		task.count += 1
 		try:
 			self.server.execute(command)
@@ -51,10 +55,12 @@ class PlayerDataGetter:
 				err
 			))
 
+	__ENTITY_DATE_REGEX = re.compile(r'^\w+ has the following entity data: .*$')
+
 	def on_info(self, info: Info):
 		if not info.is_user:
-			if re.match(r'^\w+ has the following entity data: .*$', info.content):
+			if self.__ENTITY_DATE_REGEX.match(info.content):
 				player = info.content.split(' ')[0]
 				task = self.get_queue_task(player)
-				if task.count > 0:
+				if task is not None and task.count > 0:
 					task.queue.put(info.content)
