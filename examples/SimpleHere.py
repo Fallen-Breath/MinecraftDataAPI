@@ -15,7 +15,7 @@ PLUGIN_METADATA = {
 @new_thread(PLUGIN_METADATA['name'])
 def show_me(source: CommandSource):
 	if isinstance(source, PlayerCommandSource):
-		api = source.get_server().get_plugin_instance('minecraft_data_api')
+		import minecraft_data_api as api
 		coord = api.get_player_coordinate(source.player)
 		dim = api.get_player_dimension(source.player)
 		dim_text = api.get_dimension_translation_text(dim)
@@ -25,6 +25,6 @@ def show_me(source: CommandSource):
 		))
 
 
-def on_load(server: ServerInterface, prev):
+def on_load(server: PluginServerInterface, prev):
 	server.register_help_message('!!s-here', '广播坐标并高亮玩家')
 	server.register_command(Literal('!!s-here').runs(show_me))
