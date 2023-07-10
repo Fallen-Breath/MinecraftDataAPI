@@ -1,11 +1,14 @@
 import collections
 import re
+from typing import List
 
 import hjson
 
 
 class MinecraftJsonParser:
 	__COMMAND_RESULT_PREFIX_REGEX = re.compile(r'^[^ ]* has the following entity data: ')
+	__LETTER_AFTER_NUMBER_REGEX = re.compile(r'(([{\[:,]|^) *[+-]?\d+(\.\d*?)?(E[+-]?\d+)?)([bsLdf])')
+	__ARRAY_HEADER_REGEX = re.compile(r'(?<=\[)[IL];')
 
 	@classmethod
 	def convert_minecraft_json(cls, text: str):
@@ -46,19 +49,19 @@ class MinecraftJsonParser:
 
 	@classmethod
 	def preprocess_minecraft_json(cls, text: str) -> str:
-		result = ''
+		result: List[str] = []
 		while text:
 			pos = min(text.find('"'), text.find("'"))
 			quote = None
 			if pos == -1:
 				pos = len(text)
 			non_quote_str, quote_str = text[:pos], text[pos:]
-			non_quote_str = re.sub(r'(([{\[:,]|^) *[+-]?\d+(\.\d*?)?(E[+-]?\d+)?)([bsLdf])', r'\1', non_quote_str)  # remove letter after number outside string: "1.23D" -> "1.23"
-			non_quote_str = re.sub(r'(?<=\[)[IL];', '', non_quote_str)  # remove int array or long array header outside string: "[I; 1,2,3]" -> "[ 1,2,3]"
-			result += non_quote_str
+			non_quote_str = cls.__LETTER_AFTER_NUMBER_REGEX.sub(r'\1', non_quote_str)  # remove letter after number outside string: "1.23D" -> "1.23"
+			non_quote_str = cls.__ARRAY_HEADER_REGEX.sub('', non_quote_str)  # remove int array or long array header outside string: "[I; 1,2,3]" -> "[ 1,2,3]"
+			result.append(non_quote_str)
 			if quote_str:
 				quote = quote_str[0]
-				result += quote
+				result.append(quote)
 				quote_str = quote_str[1:]  # remove the beginning quote
 			while quote_str:
 				slash_pos = quote_str.find('\\')
@@ -68,11 +71,11 @@ class MinecraftJsonParser:
 				if quote_pos == -1:  # cannot find a quote in front of the first slash
 					if slash_pos == len(quote_str):
 						raise ValueError('Cannot find a string ending quote')
-					result += quote_str[:slash_pos + 2]
+					result.append(quote_str[:slash_pos + 2])
 					quote_str = quote_str[slash_pos + 2:]
 				else:
-					result += quote_str[:quote_pos + 1]
+					result.append(quote_str[:quote_pos + 1])
 					quote_str = quote_str[quote_pos + 1:]  # found an un-escaped quote
 					break
 			text = quote_str
-		return result
+		return ''.join(result)
