@@ -8,7 +8,8 @@ import hjson
 class MinecraftJsonParser:
 	__COMMAND_RESULT_PREFIX_REGEX = re.compile(r'^[^ ]* has the following entity data: ')
 	__LETTER_AFTER_NUMBER_REGEX = re.compile(r'(([{\[:,]|^) *[+-]?\d+(\.\d*?)?(E[+-]?\d+)?)([bsLdf])')
-	__ARRAY_HEADER_REGEX = re.compile(r'(?<=\[)[IL];')
+	__ARRAY_HEADER_REGEX = re.compile(r'(?<=\[)[IL];')  # "I;" or "L;" after a "["
+	__FOLDED_TAG_REGEX = re.compile(r'<\.\.\.>')        # "<...>"
 
 	@classmethod
 	def convert_minecraft_json(cls, text: str):
@@ -61,6 +62,7 @@ class MinecraftJsonParser:
 			non_quote_str = text[i:pos]
 			non_quote_str = cls.__LETTER_AFTER_NUMBER_REGEX.sub(r'\1', non_quote_str)  # remove letter after number outside string: "1.23D" -> "1.23"
 			non_quote_str = cls.__ARRAY_HEADER_REGEX.sub('', non_quote_str)  # remove int array or long array header outside string: "[I; 1,2,3]" -> "[ 1,2,3]"
+			non_quote_str = cls.__FOLDED_TAG_REGEX.sub('', non_quote_str)  # remove FOLDED tag introduced in mc1.20.5-pre2, see issue #13
 			result.append(non_quote_str)
 
 			i = pos
@@ -74,12 +76,12 @@ class MinecraftJsonParser:
 				if quote_pos == -1:  # cannot find a quote in front of the first slash
 					j = slash_pos + 2
 					if j > len(text):
-						raise ValueError('Cannot find a string ending quote')
+						raise ValueError(f'Cannot find a string ending quote, quote start: {i}')
 				else:
 					j = quote_pos + 1  # found an un-escaped quote
 					break
 			else:
-				raise ValueError('Cannot find a string ending quote')
+				raise ValueError(f'Cannot find a string ending quote, quote start: {i}')
 
 			# Expected after finishes the while-loop above:
 			#     foo: "abc\tedf\"bar", xxx: 123

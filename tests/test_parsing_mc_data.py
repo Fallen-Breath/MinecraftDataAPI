@@ -1,5 +1,6 @@
 import os
 import unittest
+from pathlib import Path
 
 from minecraft_data_api.json_parser import MinecraftJsonParser
 
@@ -41,6 +42,8 @@ class MyTestCase(unittest.TestCase):
 			r''' {XpP: 1.0331472E-7} ''': {'XpP': 1.0331472E-7},
 			r''' {XpP: 1.0331472E+7} ''': {'XpP': 1.0331472E+7},
 			r''' {XpP: 1.0331472E7} ''': {'XpP': 1.0331472E7},
+			# FOLDED tag from mc 1.20.5-pre2
+			r''' {recipeBook: {recipes: ["minecraft:piston", <...>]}} ''': {'recipeBook': {'recipes': ['minecraft:piston']}},
 		}
 		for s, expected in cases.items():
 			msg = 'conversion: {} -> {}'.format(s, MinecraftJsonParser.preprocess_minecraft_json(s))
@@ -51,11 +54,12 @@ class MyTestCase(unittest.TestCase):
 				self.fail('convert failed: {}, {}'.format(e, msg))
 
 	def test_2_long_data(self):
-		here = os.path.abspath(os.path.dirname(__file__))
-		for file_name in os.listdir(here):
+		here = Path(os.path.dirname(__file__))
+		data_dir = here / 'data'
+		for file_name in os.listdir(data_dir):
 			if file_name.endswith('.txt'):
 				print('Testing {}'.format(file_name))
-				with open(os.path.join(here, file_name), encoding='utf8') as file:
+				with open(data_dir / file_name, encoding='utf8') as file:
 					text = file.read()
 				for line in text.splitlines():
 					if len(line) == 0 or line.startswith('#'):
@@ -64,7 +68,7 @@ class MyTestCase(unittest.TestCase):
 					try:
 						MinecraftJsonParser.convert_minecraft_json(line)
 					except Exception as e:
-						self.fail('convert failed: {}, line: {}'.format(e, line))
+						self.fail('convert failed: {}, line: {!r}'.format(e, line))
 
 
 if __name__ == '__main__':
