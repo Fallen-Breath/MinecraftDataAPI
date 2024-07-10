@@ -9,6 +9,39 @@ A MCDReforged api plugin to get player data information and more
 
 - `hjson` module
 
+```bash
+pip install hjson
+```
+
+## Configuration
+
+The config file is at `./config/minecraft_data_api/config.json`. It's configured to for with vanilla Minecraft by default
+
+All regexps in the config use python's named matching group style, like `(?P<name>...)`
+
+See `https://docs.python.org/3/library/re.html`
+
+```json5
+{
+    "server_data_getter": {
+        // The command for listing player. Used by API get_server_player_list
+        "list_command": "list",  
+        // The regex matching the output of the above command
+        // Requires fields: `amount`, `limit`, `players`
+        // The `players` field should be a `,` separated string whose items might have surrounding space chars
+        "list_output_regex": "^There are (?P<amount>\\d+) of a max( of)? (?P<limit>\\d+) players online:(?P<players>.*)$"
+    },
+    "player_data_getter": {
+        // The commands for query player entity data. Used by API get_player_info etc.
+        "data_get_all_command": "data get entity {player}",
+        "data_get_path_command": "data get entity {player} {path}",
+        // The regex matching the output of the above command
+        // Requires fields: `player`
+        "data_get_output_regex": "^(?P<player>^\\w+) has the following entity data: .*$"
+    }
+}
+```
+
 ## Usage
 
 Directly `import` MinecraftDataAPI and just use it:

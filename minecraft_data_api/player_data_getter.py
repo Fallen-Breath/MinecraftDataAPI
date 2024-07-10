@@ -1,10 +1,10 @@
-import re
 from queue import Queue, Empty
 from threading import RLock
 from typing import Dict, Optional
 
 from mcdreforged.api.all import *
 
+from minecraft_data_api.config import PlayerDataGetterConfig
 from minecraft_data_api.json_parser import MinecraftJsonParser
 
 
@@ -14,10 +14,11 @@ class PlayerDataGetter:
 			self.queue = Queue()
 			self.count = 0
 
-	def __init__(self, server: PluginServerInterface):
+	def __init__(self, server: PluginServerInterface, config: PlayerDataGetterConfig):
 		self.queue_lock = RLock()
 		self.work_queue: Dict[str, PlayerDataGetter.QueueTask] = {}
 		self.server: PluginServerInterface = server
+		self.config = config
 		self.json_parser = MinecraftJsonParser()
 
 	def get_queue_task(self, player: str) -> Optional[QueueTask]:
@@ -33,9 +34,11 @@ class PlayerDataGetter:
 	def get_player_info(self, player: str, path: str, timeout: float):
 		if self.server.is_on_executor_thread():
 			raise RuntimeError('Cannot invoke get_player_info on the task executor thread')
-		if len(path) >= 1 and not path.startswith(' '):
-			path = ' ' + path
-		command = 'data get entity {}{}'.format(player, path)
+		if len(path) > 0:
+			command = self.config.data_get_path_command.format(player=player, path=path)
+		else:
+			command = self.config.data_get_all_command.format(player=player, path=path)
+
 		task = self.get_or_create_queue_task(player)
 		task.count += 1
 		try:
@@ -55,12 +58,12 @@ class PlayerDataGetter:
 				err
 			))
 
-	__ENTITY_DATE_REGEX = re.compile(r'^\w+ has the following entity data: .*$')
-
 	def on_info(self, info: Info):
 		if not info.is_user:
-			if self.__ENTITY_DATE_REGEX.match(info.content):
-				player = info.content.split(' ')[0]
+			if (m := self.config.data_get_output_regex.match(info.content)) is not None:
+				self.server.logger.debug('player entity data output match found: {}'.format(m.groupdict()))
+
+				player = m.group('player')
 				task = self.get_queue_task(player)
 				if task is not None and task.count > 0:
 					task.queue.put(info.content)

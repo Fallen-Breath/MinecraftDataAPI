@@ -11,9 +11,10 @@
 	],
 	"link": "https://github.com/MCDReforged/MinecraftDataAPI",
 	"dependencies": {
-		"mcdreforged": ">=2.0.0"
+		"mcdreforged": ">=2.12.0"
 	},
 	"resources": [
 		"LICENSE"
-	]
+	],
+	"entrypoint": "minecraft_data_api.entry"
 }

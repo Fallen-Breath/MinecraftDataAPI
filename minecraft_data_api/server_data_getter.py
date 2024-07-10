@@ -1,16 +1,23 @@
 from contextlib import contextmanager
 from queue import Queue, Empty
-from typing import Optional, Tuple, List
+from typing import Optional, List, NamedTuple
 
-import parse
 from mcdreforged.api.all import *
+
+from minecraft_data_api.config import ServerDataGetterConfig
+
+
+class PlayerListQueryResult(NamedTuple):
+	amount: int
+	limit: int
+	players: List[str]
 
 
 class ServerDataGetter:
 	class QueryTask:
 		def __init__(self):
 			self.querying_amount = 0
-			self.result_queue = Queue()
+			self.result_queue: 'Queue[PlayerListQueryResult]' = Queue()
 
 		def is_querying(self):
 			return self.querying_amount > 0
@@ -23,39 +30,33 @@ class ServerDataGetter:
 			finally:
 				self.querying_amount -= 1
 
-	def __init__(self, server: ServerInterface):
+	def __init__(self, server: ServerInterface, config: ServerDataGetterConfig):
 		self.server = server
+		self.config = config
 		self.player_list = self.QueryTask()
 
-	def get_player_list(self, timeout: float) -> Optional[Tuple[int, int, List[str]]]:
+	def get_player_list(self, timeout: float) -> Optional[PlayerListQueryResult]:
 		if self.server.is_on_executor_thread():
 			raise RuntimeError('Cannot invoke get_player_list on the task executor thread')
 		with self.player_list.with_querying():
-			self.server.execute('list')
+			self.server.execute(self.config.list_command)
 			try:
-				amount, limit, players = self.player_list.result_queue.get(timeout=timeout)
+				return self.player_list.result_queue.get(timeout=timeout)
 			except Empty:
 				return None
-			else:
-				if len(players) > 0:
-					players = players.split(', ')
-				else:
-					players = []
-				return amount, limit, players
 
 	def on_info(self, info: Info):
 		if not info.is_user:
 			if self.player_list.is_querying():
-				formatters = (
-					# <1.16
-					# There are 6 of a max 100 players online: 122, abc, xxx, www, QwQ, bot_tob
-					r'There are {amount:d} of a max {limit:d} players online:{players}',
-					# >=1.16
-					# There are 1 of a max of 20 players online: Fallen_Breath
-					r'There are {amount:d} of a max of {limit:d} players online:{players}',
-				)
-				for formatter in formatters:
-					parsed = parse.parse(formatter, info.content)
-					if parsed is not None and parsed['players'].startswith(' '):
-						self.player_list.result_queue.put((parsed['amount'], parsed['limit'], parsed['players'][1:]))
-						break
+				if (m := self.config.list_output_regex.match(info.content)) is not None:
+					self.server.logger.debug('player list output match found: {}'.format(m.groupdict()))
+
+					amount = int(m.group('amount'))
+					limit = int(m.group('limit'))
+					players = []
+					for part in m.group('players').split(','):
+						name = part.strip()
+						if len(name) > 0:
+							players.append(name)
+
+					self.player_list.result_queue.put(PlayerListQueryResult(amount, limit, players))

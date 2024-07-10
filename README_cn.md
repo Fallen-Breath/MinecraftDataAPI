@@ -9,6 +9,39 @@
 
 - `hjson` 模块
 
+```bash
+pip install hjson
+```
+
+## 配置
+
+配置文件位于 `./config/minecraft_data_api/config.json`。配置文件的默认值已为原版 Minecraft 适配
+
+配置文件中的正则表达式都是用了 python 风格的命名捕获组，类似 `(?P<name>...)`
+
+详见 `https://docs.python.org/3/library/re.html`
+
+```json5
+{
+    "server_data_getter": {
+        // 用于列出玩家列表的指令。用于 get_server_player_list API
+        "list_command": "list",  
+        // 解析上述指令输出的正则表达式
+        // 需要包含的字段: `amount`, `limit`, `players`
+        // `players` 字段应该是一个 `,` 分割的字符串，其中的子串可以含有空格前后缀
+        "list_output_regex": "^There are (?P<amount>\\d+) of a max( of)? (?P<limit>\\d+) players online:(?P<players>.*)$"
+    },
+    "player_data_getter": {
+        // 用于查询玩家实体信息的指令。用于 get_player_info 等 API
+        "data_get_all_command": "data get entity {player}",
+        "data_get_path_command": "data get entity {player} {path}",
+        // 解析上述指令输出的正则表达式
+        // 需要包含的字段: `player`
+        "data_get_output_regex": "^(?P<player>^\\w+) has the following entity data: .*$"
+    }
+}
+```
+
 ## 使用方法
 
 直接 `import` MinecraftDataAPI，就能用了

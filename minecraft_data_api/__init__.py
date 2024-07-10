@@ -1,32 +1,33 @@
-import collections
-from typing import Optional, Union, Tuple, List
+from typing import Optional, Union, NamedTuple
 
-from mcdreforged.api.all import *
+from mcdreforged.api.all import RText, RTextTranslation
 
+from minecraft_data_api.config import Config
 from minecraft_data_api.player_data_getter import PlayerDataGetter
-from minecraft_data_api.server_data_getter import ServerDataGetter
+from minecraft_data_api.server_data_getter import ServerDataGetter, PlayerListQueryResult
+
+__all__ = [
+	'Coordinate',
+	'PlayerListQueryResult',
+
+	'convert_minecraft_json',
+	'get_player_info',
+	'get_player_coordinate',
+	'get_player_dimension',
+	'get_dimension_translation_text',
+	'get_server_player_list',
+]
+
+
+class Coordinate(NamedTuple):
+	x: float
+	y: float
+	z: float
+
 
 DEFAULT_TIME_OUT = 5  # seconds
-Coordinate = collections.namedtuple('Coordinate', 'x y z')
-player_data_getter = None  # type: Optional[PlayerDataGetter]
-server_data_getter = None  # type: Optional[ServerDataGetter]
-
-
-def on_load(server, prev):
-	global player_data_getter, server_data_getter
-	player_data_getter = PlayerDataGetter(server)
-	server_data_getter = ServerDataGetter(server)
-
-	if hasattr(prev, 'player_data_getter'):
-		player_data_getter.queue_lock = prev.player_data_getter.queue_lock
-		player_data_getter.work_queue = prev.player_data_getter.work_queue
-	if hasattr(prev, 'server_data_getter'):
-		server_data_getter.player_list = prev.server_data_getter.player_list
-
-
-def on_info(server, info):
-	player_data_getter.on_info(info)
-	server_data_getter.on_info(info)
+player_data_getter: Optional[PlayerDataGetter] = None
+server_data_getter: Optional[ServerDataGetter] = None
 
 
 # ------------------
@@ -104,7 +105,7 @@ def get_dimension_translation_text(dim_id: int) -> RText:
 		return RText(dim_id)
 
 
-def get_server_player_list(*, timeout: Optional[float] = None) -> Optional[Tuple[int, int, List[str]]]:
+def get_server_player_list(*, timeout: Optional[float] = None) -> Optional[PlayerListQueryResult]:
 	"""
 	Return the player list information by executing /list command
 	It's required to be executed in a separated thread. It can not be invoked on the task executor thread of MCDR
