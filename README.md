@@ -79,7 +79,7 @@ Return:
 
 Please refer to the Player.dat page on minecraft wiki
 
-[player.dat format](https://minecraft.gamepedia.com/Player.dat_format)
+[player.dat format](https://minecraft.wiki/w/Player.dat_format)
 
 ### get_player_coordinate
 

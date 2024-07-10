@@ -79,7 +79,7 @@ def get_player_info(player: str, data_path: str = '', *, timeout: Optional[float
 
 你可以在Minecraft Wiki参考关于Player.dat的格式信息
 
-[Player.dat格式](https://minecraft-zh.gamepedia.com/Player.dat%E6%A0%BC%E5%BC%8F)
+[Player.dat格式](https://zh.minecraft.wiki/w/%E7%8E%A9%E5%AE%B6%E5%AD%98%E5%82%A8%E6%A0%BC%E5%BC%8F)
 
 ### get_player_coordinate
 
