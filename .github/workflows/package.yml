@@ -9,17 +9,17 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: [ '3.8', '3.9', '3.10', '3.11' ]
+        python-version: [ '3.8', '3.9', '3.10', '3.11', '3.12' ]
     name: Test with python ${{ matrix.python-version }}
 
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Setup python
-        uses: actions/setup-python@v3
+        uses: actions/setup-python@v4
         with:
           python-version: ${{ matrix.python-version }}
 
-      - uses: actions/cache@v3
+      - uses: actions/cache@v4
         with:
           path: ~/.cache/pip
           key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
@@ -42,9 +42,9 @@ jobs:
     needs: test
 
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
     - name: Setup python
-      uses: actions/setup-python@v3
+      uses: actions/setup-python@v4
       with:
         python-version: '3.10'
 
@@ -64,7 +64,7 @@ jobs:
       run: |
         python -m mcdreforged pack -o package
 
-    - uses: actions/upload-artifact@v3
+    - uses: actions/upload-artifact@v4
       with:
         name: MinecraftDataAPI distribution for ${{ github.sha }}
         path: package/
