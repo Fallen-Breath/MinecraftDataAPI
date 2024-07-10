@@ -45,18 +45,18 @@ class PlayerDataGetter:
 			self.server.execute(command)
 			content = task.queue.get(timeout=timeout)
 		except Empty:
-			self.server.logger.warning('[{}] Query for player {} at path {} timeout'.format(self.server.get_self_metadata().name, player, path))
+			self.server.logger.warning('Query for player {} at path {} timeout'.format(player, path))
 			return None
 		finally:
 			task.count -= 1
 		try:
 			return self.json_parser.convert_minecraft_json(content)
 		except Exception as err:
-			self.server.logger.error('[{}] Fail to Convert data "{}": {}'.format(
-				self.server.get_self_metadata().name,
+			self.server.logger.error('Fail to Convert data "{}": {}'.format(
 				content if len(content) < 64 else '{}...'.format(content[:64]),
 				err
 			))
+			self.server.logger.debug('content: {!r}'.format(content))
 
 	def on_info(self, info: Info):
 		if not info.is_user:
