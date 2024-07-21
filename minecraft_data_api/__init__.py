@@ -1,6 +1,6 @@
 from typing import Optional, Union, NamedTuple
 
-from mcdreforged.api.all import RText, RTextTranslation
+from mcdreforged.api.all import RText, RTextTranslation, ServerInterface, Version
 
 from minecraft_data_api.config import Config
 from minecraft_data_api.player_data_getter import PlayerDataGetter
@@ -94,8 +94,16 @@ def get_dimension_translation_text(dim_id: int) -> RText:
 	If the dimension id is not supported, it will just return a RText object wrapping the dimension id
 	:param dim_id: a int representing the dimension. Should be 0, -1 or 1
 	"""
+	overworld_key = 'flat_world_preset.minecraft.overworld'
+	try:
+		version = Version(ServerInterface.si().get_server_information().version)
+	except ValueError:
+		pass
+	else:
+		if version < Version('1.19'):
+			overworld_key = 'createWorld.customize.preset.overworld'
 	dimension_translation = {
-		0: 'createWorld.customize.preset.overworld',
+		0: overworld_key,
 		-1: 'advancements.nether.root.title',
 		1: 'advancements.end.root.title'
 	}
